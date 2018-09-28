@@ -1,0 +1,15 @@
+﻿  Skeleton.cpp
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(59): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(60): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(74): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(75): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(87): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(89): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(105): warning C4018: '<': signed/unsigned mismatch
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(118): warning C4473: 'printf' : not enough arguments passed for format string
+  w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(118): note: placeholders and their parameters expect 1 variadic arguments, but 0 were provided
+  w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(118): note: the missing variadic argument 1 is required by format string '%lf'
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(170): warning C4305: '+=': truncation from 'double' to 'float'
+w:\bme\cg\programs\skeleton\skeleton\skeleton.cpp(256): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+  Skeleton.vcxproj -> W:\BME\CG\Programs\Skeleton\bin\Skeleton.exe
+  Skeleton.vcxproj -> W:\BME\CG\Programs\Skeleton\bin\Skeleton.pdb (Full PDB)
