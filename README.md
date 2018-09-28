@@ -1,1 +1,1 @@
-# CG_Homework_1
+# CG Homework 1
