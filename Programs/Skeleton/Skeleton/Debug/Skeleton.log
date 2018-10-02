@@ -1,15 +1,10 @@
-﻿  Skeleton.cpp
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(39): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(40): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(316): warning C4305: '+=': truncation from 'double' to 'float'
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(336): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(337): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(353): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(354): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(361): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(363): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(408): warning C4018: '<': signed/unsigned mismatch
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(436): warning C4305: '+=': truncation from 'double' to 'float'
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\skeleton.cpp(429): warning C4715: 'CatmullRom::r': not all control paths return a value
+﻿  CatmullRomTrain.cpp
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(148): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(149): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(156): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(157): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(202): warning C4018: '<': signed/unsigned mismatch
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(231): warning C4305: '+=': truncation from 'double' to 'float'
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(224): warning C4715: 'CatmullRom::r': not all control paths return a value
   Skeleton.vcxproj -> W:\BME\CG\CG_Homework_1\Programs\Skeleton\bin\Skeleton.exe
   Skeleton.vcxproj -> W:\BME\CG\CG_Homework_1\Programs\Skeleton\bin\Skeleton.pdb (Full PDB)

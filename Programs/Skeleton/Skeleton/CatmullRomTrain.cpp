@@ -1,4 +1,37 @@
 //=============================================================================================
+// Mintaprogram: Zöld háromszög. Ervenyes 2018. osztol.
+//
+// A beadott program csak ebben a fajlban lehet, a fajl 1 byte-os ASCII karaktereket tartalmazhat, BOM kihuzando.
+// Tilos:
+// - mast "beincludolni", illetve mas konyvtarat hasznalni
+// - faljmuveleteket vegezni a printf-et kiveve
+// - Mashonnan atvett programresszleteket forrasmegjeloles nelkul felhasznalni es
+// - felesleges programsorokat a beadott programban hagyni!!!!!!! 
+// - felesleges kommenteket a beadott programba irni a forrasmegjelolest kommentjeit kiveve
+// ---------------------------------------------------------------------------------------------
+// A feladatot ANSI C++ nyelvu forditoprogrammal ellenorizzuk, a Visual Studio-hoz kepesti elteresekrol
+// es a leggyakoribb hibakrol (pl. ideiglenes objektumot nem lehet referencia tipusnak ertekul adni)
+// a hazibeado portal ad egy osszefoglalot.
+// ---------------------------------------------------------------------------------------------
+// A feladatmegoldasokban csak olyan OpenGL fuggvenyek hasznalhatok, amelyek az oran a feladatkiadasig elhangzottak 
+// A keretben nem szereplo GLUT fuggvenyek tiltottak.
+//
+// NYILATKOZAT
+// ---------------------------------------------------------------------------------------------
+// Nev    : Gyõri Kristóf
+// Neptun : HV0R9S
+// ---------------------------------------------------------------------------------------------
+// ezennel kijelentem, hogy a feladatot magam keszitettem, es ha barmilyen segitseget igenybe vettem vagy
+// mas szellemi termeket felhasznaltam, akkor a forrast es az atvett reszt kommentekben egyertelmuen jeloltem.
+// A forrasmegjeloles kotelme vonatkozik az eloadas foliakat es a targy oktatoi, illetve a
+// grafhazi doktor tanacsait kiveve barmilyen csatornan (szoban, irasban, Interneten, stb.) erkezo minden egyeb
+// informaciora (keplet, program, algoritmus, stb.). Kijelentem, hogy a forrasmegjelolessel atvett reszeket is ertem,
+// azok helyessegere matematikai bizonyitast tudok adni. Tisztaban vagyok azzal, hogy az atvett reszek nem szamitanak
+// a sajat kontribucioba, igy a feladat elfogadasarol a tobbi resz mennyisege es minosege alapjan szuletik dontes.
+// Tudomasul veszem, hogy a forrasmegjeloles kotelmenek megsertese eseten a hazifeladatra adhato pontokat
+// negativ elojellel szamoljak el es ezzel parhuzamosan eljaras is indul velem szemben.
+//=============================================================================================
+//=============================================================================================
 // Triangle with smooth color and interactive polyline 
 //=============================================================================================
 #include "framework.h"
@@ -69,7 +102,7 @@ protected:
 	int    nVertices = 0;       // number of vertices
 	vec2   wTranslate;
 public:
-	
+
 	mat4 M() {
 		return mat4(1, 0, 0, 0,
 			0, 1, 0, 0,
@@ -125,7 +158,7 @@ class CatmullRom : public DrawableObject {
 		vec3 vi = (tag1 + tag2)*(1.0 / 2.0);
 		return vi;
 	}
-public: 
+public:
 	void Create() {
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
@@ -164,28 +197,28 @@ public:
 		cps.push_back(cp);
 		ts.push_back(t);
 	}
-	
+
 	vec3 r(float t) {
-		for (int i = 0; i < cps.size() - 1 ; i++)
+		for (int i = 0; i < cps.size() - 1; i++)
 		{
-			if (ts[i] <= t && t <= ts[i + 1]) {		
+			if (ts[i] <= t && t <= ts[i + 1]) {
 				// The first control point
-				if (i == 0) {						
+				if (i == 0) {
 					v0 = cps[1] - cps[0];			// Init in manual way the first v(0) vector
 					v1 = v(i + 1);
 				}
-				else {	
+				else {
 					v0 = v(i);
-					
+
 					// The last control point
 					if (i == cps.size() - 2) {
 						v1 = cps[i + 1] - cps[i];	// Init in manual way the last v(n) vector
 					}
 					else
-						v1 = v(i + 1);			
+						v1 = v(i + 1);
 				}
 
-				return Hermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);	
+				return Hermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);
 			}
 		}
 	}
@@ -203,18 +236,18 @@ public:
 			}
 		}
 		if (nVertices > 0) {
-			
 
-				// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
-				mat4 MVPTransform = M() * camera.V() * camera.P();
-				MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
 
-				glBindVertexArray(vao);
-				glDrawArrays(GL_LINE_STRIP, 0, nVertices);
-			}
+			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
+			mat4 MVPTransform = M() * camera.V() * camera.P();
+			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
+
+			glBindVertexArray(vao);
+			glDrawArrays(GL_LINE_STRIP, 0, nVertices);
 		}
-			
-	
+	}
+
+
 };
 
 // The virtual world: collection of two objects
@@ -254,7 +287,7 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 0);							// background color 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
 
-	
+
 	lineStrip.Draw();
 
 	glutSwapBuffers();									// exchange the two buffers
@@ -307,7 +340,7 @@ void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
 	float sec = time / 1000.0f;				// convert msec to sec
 
-	//triangle.Animate(sec);					// animate the triangle object
+											//triangle.Animate(sec);					// animate the triangle object
 
 	glutPostRedisplay();					// redraw the scene
 }

@@ -73,8 +73,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CatmullRomTrain.cpp" />
     <ClCompile Include="framework.cpp" />
-    <ClCompile Include="Skeleton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
