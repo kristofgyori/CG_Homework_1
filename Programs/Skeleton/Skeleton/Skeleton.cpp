@@ -1,8 +1,48 @@
 //=============================================================================================
 // Triangle with smooth color and interactive polyline 
 //=============================================================================================
-#include "MyClasses.h"
-//#include "framework.h"
+//#include "MyClasses.h"
+
+#include "framework.h"
+
+class Hermit {
+	vec3 p0;	// First Point
+	vec3 p1;	// Last Point
+	std::vector<vec4> cps;
+	float t0 = 0;
+	float t1 = 1;
+	vec2   wTranslate;
+public:
+	mat4 Minv() {
+		return mat4(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			-wTranslate.x, -wTranslate.y, 0, 1); // model matrix
+	}
+	void AddPoints(int cX, int cY) {
+		//vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv() * Minv();
+		//cps.push_back(wVertex);
+	}
+	vec3 r(float t) {
+		p0 = vec3(cps[0].x, cps[0].y, 0);
+		p1 = vec3(cps[1].x, cps[1].y, 0);
+		vec3 a0 = p0;														// First point: p0
+		vec3 v0 = p1 - p0;														// r'(t0)
+		vec3 v1 = p1; // a3*((t - t0)*(t - t0)) * 3 + a2*((t - t0)) * 2 + a1;		// r'(t1)
+
+		return getHermit(p0, v0, t0, p1, v1, t1, t);
+	}
+
+	vec3 getHermit(vec3 p0, vec3 v0, float t0, vec3 p1, vec3 v1, float t1, float t) {
+		vec3 a0 = p0;
+		vec3 a1 = v0;
+		vec3 a2 = (((p1 - p0) * 3)*(1.0 / ((t1 - t0)*(t1 - t0)))) - ((v1 + (v0 * 2))*(1.0 / (t1 - t0)));
+		vec3 a3 = (((p0 - p1) * 2)*(1.0 / ((t1 - t0)*(t1 - t0)*(t1 - t0)))) + ((v1 + (v0))*(1.0 / ((t1 - t0)*(t1 - t0))));
+
+		vec3 rt = (a3*((t - t0)*(t - t0)*(t - t0))) + (a2*((t - t0)*(t - t0))) + (a1*((t - t0))) + a0;
+		return rt;
+	}
+};
 
 // vertex shader in GLSL
 const char * vertexSource = R"(
@@ -62,6 +102,46 @@ public:
 // 2D camera
 Camera2D camera;
 GPUProgram gpuProgram; // vertex and fragment shaders
+
+class DrawableObject {
+
+protected:
+	GLuint vao, vbo;        // vertex array object, vertex buffer object
+	float*  vertexData; // interleaved data of coordinates and colors
+	int    nVertices = 0;       // number of vertices
+	vec2   wTranslate;
+public:
+	
+	mat4 M() {
+		return mat4(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			wTranslate.x, wTranslate.y, 0, 1); // model matrix
+	}
+	mat4 Minv() {
+		return mat4(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			-wTranslate.x, -wTranslate.y, 0, 1); // model matrix
+	}
+
+	void AddTranslation(vec2 wT) { wTranslate = wTranslate + wT; }
+
+	virtual void Create() = 0;
+	virtual void AddPoint(float cX, float cY) = 0;
+
+	virtual void Draw() {
+		if (nVertices > 0) {
+			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
+			mat4 MVPTransform = M() * camera.V() * camera.P();
+			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
+
+			glBindVertexArray(vao);
+			glDrawArrays(GL_LINE_STRIP, 0, nVertices);
+		}
+	}
+
+};
 
 class Triangle {
 	unsigned int vao;	// vertex array object id
@@ -150,6 +230,143 @@ public:
 		nVertices = 0;
 	}
 
+	mat4 M() {
+		return mat4(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			wTranslate.x, wTranslate.y, 0, 1); // model matrix
+	}
+	mat4 Minv() {
+		return mat4(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 1, 0,
+			-wTranslate.x, -wTranslate.y, 0, 1); // model matrix
+	}
+
+	void AddTranslation(vec2 wT) { wTranslate = wTranslate + wT; }
+
+	
+
+};
+
+class Hermite : public DrawableObject {
+private:
+	std::vector<GLfloat> vertexDatas;
+	std::vector<vec3> controlPoints;
+	vec3 r0;	// Start
+	vec3 r1;	// End
+	float t0	;
+	float t1;
+	vec3 v0;
+	vec3 v1;
+public: 
+	Hermite() {
+		t0 = 0;
+		t1 = 2;
+	}
+	void Create() {
+		glGenVertexArrays(1, &vao);
+		glBindVertexArray(vao);
+
+		glGenBuffers(1, &vbo); // Generate 1 vertex buffer object
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		// Enable the vertex attribute arrays
+		glEnableVertexAttribArray(0);  // attribute array 0
+		glEnableVertexAttribArray(1);  // attribute array 1
+									   // Map attribute array 0 to the vertex data of the interleaved vbo
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0)); // attribute array, components/attribute, component type, normalize?, stride, offset
+																										// Map attribute array 1 to the color data of the interleaved vbo
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
+	}
+	
+	// Kontrolpontok hozzáadása
+	void AddCps(vec3 point) {
+		controlPoints.push_back(point);
+
+		if (controlPoints.size() == 2) {
+			
+			r0 = controlPoints[0];
+			r1 = controlPoints[1];
+			//v1 = r1;
+		}
+	}
+
+	void AddPoint(float cX, float cY) {
+		glBindBuffer(GL_ARRAY_BUFFER, vbo);
+		//if (nVertices >= 20) return;
+
+		vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv() * Minv();
+		// fill interleaved data
+		vertexDatas.push_back(wVertex.x);
+		vertexDatas.push_back(wVertex.y);
+		vertexDatas.push_back(1);
+		vertexDatas.push_back(0.5);
+		vertexDatas.push_back(0);
+		nVertices++;
+		// copy data to the GPU
+		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), &vertexDatas[0], GL_STATIC_DRAW);
+
+		printf("Coords: %lf, %lf\n", cX, cY);
+	}
+	bool ok = true;
+	void Draw() {	
+
+		if (nVertices > 0 || controlPoints.size() >= 2) {
+			if (ok) {
+				for (float t = t0; t <= t1; t += 0.05) {
+					vec3 c = getHermit(r0, v0, t0, r1, v1, t1, t);
+					AddPoint(c.x, c.y);
+				}
+				ok = false;
+			}
+			
+			
+			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
+			mat4 MVPTransform = M() * camera.V() * camera.P();
+			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
+
+			glBindVertexArray(vao);
+			glDrawArrays(GL_LINE_STRIP, 0, nVertices);		
+		}
+	}
+
+	vec3 getHermit(vec3 p0, vec3 v0, float t0, vec3 p1, vec3 v1, float t1, float t) {
+		vec3 a0 = p0;
+		vec3 a1 = v0;
+		vec3 a2 = (((p1 - p0) * 3)*(1.0 / ((t1 - t0)*(t1 - t0)))) - ((v1 + (v0 * 2))*(1.0 / (t1 - t0)));
+		vec3 a3 = (((p0 - p1) * 2)*(1.0 / ((t1 - t0)*(t1 - t0)*(t1 - t0)))) + ((v1 + (v0))*(1.0 / ((t1 - t0)*(t1 - t0))));
+
+		vec3 rt = (a3*((t - t0)*(t - t0)*(t - t0))) + (a2*((t - t0)*(t - t0))) + (a1*((t - t0))) + a0;
+		return rt;
+	}
+};
+
+class CatmullRom : public DrawableObject {
+	std::vector<vec3> cps;
+	std::vector<float> ts;
+	std::vector<GLfloat> vertexDatas;
+	vec3 v0;
+	vec3 v1;
+	vec3 Hermite(vec3 p0, vec3 v0, float t0, vec3 p1, vec3 v1, float t1, float t) {
+		vec3 a0 = p0;
+		vec3 a1 = v0;
+		vec3 a2 = (((p1 - p0) * 3)*(1.0 / ((t1 - t0)*(t1 - t0)))) - ((v1 + (v0 * 2))*(1.0 / (t1 - t0)));
+		vec3 a3 = (((p0 - p1) * 2)*(1.0 / ((t1 - t0)*(t1 - t0)*(t1 - t0)))) + ((v1 + (v0))*(1.0 / ((t1 - t0)*(t1 - t0))));
+
+		vec3 rt = (a3*((t - t0)*(t - t0)*(t - t0))) + (a2*((t - t0)*(t - t0))) + (a1*((t - t0))) + a0;
+		return rt;
+	}
+
+	vec3 v(int i) {
+		vec3 tag1 = (cps[i + 1] - cps[i])*(1.0 / (ts[i + 1] - ts[i]));
+		//printf("tag1 = (%lf, %lf)\n", tag1.x, tag1.y);
+		vec3 tag2 = (cps[i] - cps[i - 1])*(1.0 / (ts[i] - ts[i - 1]));
+		//printf("tag2 = (%lf, %lf)\n", tag2.x, tag2.y);
+		vec3 vi = (tag1 + tag2)*(1.0 / 2.0);
+		//printf("(%lf, %lf)\n", vi.x, vi.y);
+		return vi;
+	}
+public: 
 	void Create() {
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
@@ -165,126 +382,82 @@ public:
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
 	}
 
-	mat4 M() {
-		return mat4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			wTranslate.x, wTranslate.y, 0, 1); // model matrix
-	}
-	mat4 Minv() {
-		return mat4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			-wTranslate.x, -wTranslate.y, 0, 1); // model matrix
-	}
-
 	void AddPoint(float cX, float cY) {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		if (nVertices >= 20) return;
+		//if (nVertices >= 20) return;
 
 		vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv() * Minv();
 		// fill interleaved data
-		vertexData[5 * nVertices] = wVertex.x;
-		vertexData[5 * nVertices + 1] = wVertex.y;
-		vertexData[5 * nVertices + 2] = 1; // red
-		vertexData[5 * nVertices + 3] = 1; // green
-		vertexData[5 * nVertices + 4] = 0; // blue
+		vertexDatas.push_back(wVertex.x);
+		vertexDatas.push_back(wVertex.y);
+		vertexDatas.push_back(1);
+		vertexDatas.push_back(0.5);
+		vertexDatas.push_back(0);
 		nVertices++;
 		// copy data to the GPU
-		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), vertexData, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), &vertexDatas[0], GL_STATIC_DRAW);
+
+		printf("Coords: %lf, %lf\n", cX, cY);
 	}
-
-	void AddTranslation(vec2 wT) { wTranslate = wTranslate + wT; }
-
-	void Draw() {
-		if (nVertices > 0) {
-			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
-			mat4 MVPTransform = M() * camera.V() * camera.P();
-			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
-
-			glBindVertexArray(vao);
-			glDrawArrays(GL_LINE_STRIP, 0, nVertices);
+	void AddControlPoints(vec3 cp, float t) {
+		cps.push_back(cp);
+		ts.push_back(t);
+	}
+	
+	vec3 r(float t) {
+		for (int i = 0; i < cps.size() - 1 ; i++)
+		{
+			if (ts[i] <= t && t <= ts[i + 1]) {		 
+				if (i == 0) {
+					v0 = cps[1];
+					v1 = v(i + 1);
+				}
+				else {
+					v0 = v(i);
+					if (i == cps.size() - 2) {
+						v1 = cps[i + 1] - cps[i];
+					}
+					else
+					{
+						v1 = v(i + 1);
+					}
+					
+				}
+				return Hermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);	
+			}
 		}
 	}
-};
-class HerminSpline {
-	GLuint vao, vbo;        // vertex array object, vertex buffer object
-	float  vertexData[100]; // interleaved data of coordinates and colors
-	std::vector<float> vertexData2;
-	int    nVertices;       // number of vertices
-	vec2   wTranslate;
-public:
-	HerminSpline() {
-		nVertices = 0;
-	}
 
-	void Create() {
-		glGenVertexArrays(1, &vao);
-		glBindVertexArray(vao);
-
-		glGenBuffers(1, &vbo); // Generate 1 vertex buffer object
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		// Enable the vertex attribute arrays
-		glEnableVertexAttribArray(0);  // attribute array 0
-		glEnableVertexAttribArray(1);  // attribute array 1
-									   // Map attribute array 0 to the vertex data of the interleaved vbo
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0)); // attribute array, components/attribute, component type, normalize?, stride, offset
-																										// Map attribute array 1 to the color data of the interleaved vbo
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
-	}
-
-	mat4 M() {
-		return mat4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			wTranslate.x, wTranslate.y, 0, 1); // model matrix
-	}
-	mat4 Minv() {
-		return mat4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			-wTranslate.x, -wTranslate.y, 0, 1); // model matrix
-	}
-
-	void AddPoint(float cX, float cY) {
-		glBindBuffer(GL_ARRAY_BUFFER, vbo);
-		if (nVertices >= 20) return;
-
-		vec4 wVertex = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv() * Minv();
-		// fill interleaved data
-		vertexData[5 * nVertices] = wVertex.x;
-		vertexData[5 * nVertices + 1] = wVertex.y;
-		vertexData[5 * nVertices + 2] = 1; // red
-		vertexData[5 * nVertices + 3] = 1; // green
-		vertexData[5 * nVertices + 4] = 0; // blue
-		nVertices++;
-		vertexData2.push_back(wVertex.x);
-		vertexData2.push_back(wVertex.y);
-		vertexData2.push_back(1);
-		vertexData2.push_back(1);
-		vertexData2.push_back(0);
-
-		// copy data to the GPU
-		//glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), vertexData, GL_DYNAMIC_DRAW);
-		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), &vertexData2[0], GL_DYNAMIC_DRAW);
-	}
-
-	void AddTranslation(vec2 wT) { wTranslate = wTranslate + wT; }
-
+	bool ok = true;
 	void Draw() {
-		if (nVertices > 0) {
-			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
-			mat4 MVPTransform = M() * camera.V() * camera.P();
-			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
 
-			glBindVertexArray(vao);
-			glDrawArrays(GL_LINE_STRIP, 0, nVertices);
+		if (cps.size() >= 4) {
+			if (ok) {
+				for (float t = ts[0]; t <= ts.size() - 1; t += 0.05) {
+					vec3 c = r(t);
+					AddPoint(c.x, c.y);
+				}
+				ok = false;
+			}
 		}
-	}
+		if (nVertices > 0) {
+			
+
+				// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
+				mat4 MVPTransform = M() * camera.V() * camera.P();
+				MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
+
+				glBindVertexArray(vao);
+				glDrawArrays(GL_LINE_STRIP, 0, nVertices);
+			}
+		}
+			
+	
 };
+
 // The virtual world: collection of two objects
-Triangle triangle;
-HerminSpline lineStrip;
+//Triangle triangle;
+CatmullRom lineStrip;
 
 // Initialization, create an OpenGL context
 void onInitialization() {
@@ -296,7 +469,7 @@ void onInitialization() {
 
 	// Create objects by setting up their vertex data on the GPU
 	lineStrip.Create();
-	triangle.Create();
+	//triangle.Create();
 
 	// create program for the GPU
 	gpuProgram.Create(vertexSource, fragmentSource, "fragmentColor");
@@ -320,7 +493,7 @@ void onDisplay() {
 	glClearColor(0, 0, 0, 0);							// background color 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
 
-	triangle.Draw();
+	//triangle.Draw();
 	lineStrip.Draw();
 
 	glutSwapBuffers();									// exchange the two buffers
@@ -347,12 +520,18 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 void onKeyboardUp(unsigned char key, int pX, int pY) {
 }
 
+int i = 0;
 // Mouse click event
 void onMouse(int button, int state, int pX, int pY) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {  // GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON and GLUT_DOWN / GLUT_UP
 		float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
 		float cY = 1.0f - 2.0f * pY / windowHeight;
-		lineStrip.AddPoint(cX, cY);
+		if (i < 4) {
+			lineStrip.AddControlPoints(vec3(cX, cY, 0), (float)(i));
+			i++;
+		}
+		printf("Mouse coords: %lf, %lf", cX, cY);
+		//lineStrip.AddPoint(cX, cY);
 		glutPostRedisplay();     // redraw
 	}
 }
@@ -366,7 +545,7 @@ void onIdle() {
 	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
 	float sec = time / 1000.0f;				// convert msec to sec
 
-	triangle.Animate(sec);					// animate the triangle object
+	//triangle.Animate(sec);					// animate the triangle object
 
 	glutPostRedisplay();					// redraw the scene
 }
