@@ -4,7 +4,8 @@ w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(149): war
 w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(156): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
 w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(157): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
 w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(202): warning C4018: '<': signed/unsigned mismatch
-w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(231): warning C4305: '+=': truncation from 'double' to 'float'
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(230): warning C4018: '>=': signed/unsigned mismatch
+w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(232): warning C4305: '+=': truncation from 'double' to 'float'
 w:\bme\cg\cg_homework_1\programs\skeleton\skeleton\catmullromtrain.cpp(224): warning C4715: 'CatmullRom::r': not all control paths return a value
   Skeleton.vcxproj -> W:\BME\CG\CG_Homework_1\Programs\Skeleton\bin\Skeleton.exe
   Skeleton.vcxproj -> W:\BME\CG\CG_Homework_1\Programs\Skeleton\bin\Skeleton.pdb (Full PDB)

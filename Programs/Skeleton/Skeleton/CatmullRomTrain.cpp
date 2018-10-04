@@ -93,7 +93,7 @@ public:
 // 2D camera
 Camera2D camera;
 GPUProgram gpuProgram; // vertex and fragment shaders
-
+int cpsNum = 4;
 class DrawableObject {
 
 protected:
@@ -224,9 +224,10 @@ public:
 	}
 
 	bool ok = true;		// Can I draw it? 
+	
 	void Draw() {
 
-		if (cps.size() >= 4) {
+		if (cps.size() >= cpsNum) {
 			if (ok) {
 				for (float t = ts[0]; t <= ts.size() - 1; t += 0.05) {
 					vec3 c = r(t);
@@ -322,7 +323,7 @@ void onMouse(int button, int state, int pX, int pY) {
 		float cY = 1.0f - 2.0f * pY / windowHeight;
 
 		// It needs only 4 control points
-		if (i < 4) {
+		if (i < cpsNum) {
 			lineStrip.AddControlPoints(vec3(cX, cY, 0), (float)(i));
 			i++;
 		}
