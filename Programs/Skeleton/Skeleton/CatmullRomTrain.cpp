@@ -93,7 +93,6 @@ public:
 // 2D camera
 Camera2D camera;
 GPUProgram gpuProgram; // vertex and fragment shaders
-int cpsNum = 4;
 class DrawableObject {
 
 protected:
@@ -101,8 +100,8 @@ protected:
 	float*  vertexData; // interleaved data of coordinates and colors
 	int    nVertices = 0;       // number of vertices
 	vec2   wTranslate;
-public:
 
+public:
 	mat4 M() {
 		return mat4(1, 0, 0, 0,
 			0, 1, 0, 0,
@@ -162,8 +161,8 @@ public:
 	void Create() {
 		glGenVertexArrays(1, &vao);
 		glBindVertexArray(vao);
-
-		glGenBuffers(1, &vbo); // Generate 1 vertex buffer object
+		
+		glGenBuffers(2, &vbo); // Generate 1 vertex buffer object
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 		// Enable the vertex attribute arrays
 		glEnableVertexAttribArray(0);  // attribute array 0
@@ -172,8 +171,14 @@ public:
 		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(0)); // attribute array, components/attribute, component type, normalize?, stride, offset
 																										// Map attribute array 1 to the color data of the interleaved vbo
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(2 * sizeof(float)));
+
 	}
 
+	void FlushVertexData() {
+			vertexDatas.clear();
+			nVertices = 0;
+		
+	}
 	void AddPoint(float cX, float cY) {
 		glBindBuffer(GL_ARRAY_BUFFER, vbo);
 
@@ -182,8 +187,8 @@ public:
 		vertexDatas.push_back(wVertex.x);
 		vertexDatas.push_back(wVertex.y);
 		vertexDatas.push_back(1);
-		vertexDatas.push_back(0.5);
-		vertexDatas.push_back(0);
+		vertexDatas.push_back(0.25);
+		vertexDatas.push_back(0.1);
 		nVertices++;
 
 		copyDataToGPU();
@@ -191,7 +196,7 @@ public:
 
 	void copyDataToGPU() {
 		// copy data to the GPU
-		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), &vertexDatas[0], GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, nVertices * 5 * sizeof(float), &vertexDatas[0], GL_DYNAMIC_DRAW);
 	}
 	void AddControlPoints(vec3 cp, float t) {
 		cps.push_back(cp);
@@ -201,54 +206,61 @@ public:
 	vec3 r(float t) {
 		for (int i = 0; i < cps.size() - 1; i++)
 		{
-			if (ts[i] <= t && t <= ts[i + 1]) {
+			if (cps.size() == 0 || cps.size() == 1) return NULL;
+			else if (ts[i] <= t && t <= ts[i + 1]) {
+
 				// The first control point
 				if (i == 0) {
 					v0 = cps[1] - cps[0];			// Init in manual way the first v(0) vector
-					v1 = v(i + 1);
+					if (cps.size() > 2) {
+						v1 = v(i + 1);
+					}
+					else {
+						v1 = vec3(-1, -1);					// Linear spline if there are 2 cps 
+					}
+
 				}
 				else {
 					v0 = v(i);
-
 					// The last control point
-					if (i == cps.size() - 2) {
+					if (i >= cps.size() - 2) {
 						v1 = cps[i + 1] - cps[i];	// Init in manual way the last v(n) vector
 					}
 					else
 						v1 = v(i + 1);
 				}
 
+				
 				return Hermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);
 			}
 		}
 	}
-
-	bool ok = true;		// Can I draw it? 
+	bool ok = true;
 	
-	void Draw() {
 
-		if (cps.size() >= cpsNum) {
-			if (ok) {
-				for (float t = ts[0]; t <= ts.size() - 1; t += 0.05) {
-					vec3 c = r(t);
-					AddPoint(c.x, c.y);
-				}
-				ok = false;
+	
+	void Draw() {	
+		
+		if (ts.size() != 0) {
+			for (float t = ts[0]; t < ts.size(); t += 0.01) {
+				vec3 c = r(t);
+				AddPoint(c.x, c.y);
 			}
 		}
+
 		if (nVertices > 0) {
-
-
 			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
 			mat4 MVPTransform = M() * camera.V() * camera.P();
 			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
 
 			glBindVertexArray(vao);
-			glDrawArrays(GL_LINE_STRIP, 0, nVertices);
+			glDrawArrays(GL_POINTS, 0, nVertices);
 		}
 	}
 
-
+	void SayVertexPoints() {
+		printf(" ------------------- \n");
+	}
 };
 
 // The virtual world: collection of two objects
@@ -260,7 +272,8 @@ void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight);
 
 	// Width of lines in pixels
-	glLineWidth(2.0f);
+	glLineWidth(4.0f);
+	glPointSize(4.0f);
 
 	// Create objects by setting up their vertex data on the GPU
 	lineStrip.Create();
@@ -315,19 +328,15 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 void onKeyboardUp(unsigned char key, int pX, int pY) {
 }
 
-static int i = 0;
+static float i = 0.0f;		// NumberOfClicks
 // Mouse click event
 void onMouse(int button, int state, int pX, int pY) {
 	if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {  // GLUT_LEFT_BUTTON / GLUT_RIGHT_BUTTON and GLUT_DOWN / GLUT_UP
 		float cX = 2.0f * pX / windowWidth - 1;	// flip y axis
 		float cY = 1.0f - 2.0f * pY / windowHeight;
-
-		// It needs only 4 control points
-		if (i < cpsNum) {
-			lineStrip.AddControlPoints(vec3(cX, cY, 0), (float)(i));
-			i++;
-		}
-
+		lineStrip.FlushVertexData();
+		lineStrip.AddControlPoints(vec3(cX, cY, 0), i);
+		i++;
 		glutPostRedisplay();     // redraw
 	}
 }
