@@ -1,17 +1,25 @@
 ﻿  Skeleton.cpp
-Skeleton.cpp(182): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-Skeleton.cpp(183): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-Skeleton.cpp(190): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-Skeleton.cpp(191): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
-Skeleton.cpp(201): warning C4244: 'argument': conversion from 'unsigned int' to 'float', possible loss of data
-Skeleton.cpp(212): warning C4018: '<': signed/unsigned mismatch
-Skeleton.cpp(291): warning C4305: '+=': truncation from 'double' to 'float'
-Skeleton.cpp(463): warning C4305: 'initializing': truncation from 'double' to 'const float'
-Skeleton.cpp(441): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+Skeleton.cpp(134): warning C4305: 'initializing': truncation from 'double' to 'const float'
+Skeleton.cpp(146): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(147): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(156): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(157): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(164): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(165): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(174): warning C4244: 'argument': conversion from 'unsigned int' to 'float', possible loss of data
+Skeleton.cpp(187): warning C4018: '<': signed/unsigned mismatch
+Skeleton.cpp(270): warning C4305: 'initializing': truncation from 'double' to 'float'
+Skeleton.cpp(353): warning C4244: 'initializing': conversion from 'int' to 'float', possible loss of data
+Skeleton.cpp(356): warning C4305: 'initializing': truncation from 'double' to 'float'
+Skeleton.cpp(357): warning C4305: 'initializing': truncation from 'double' to 'float'
+Skeleton.cpp(367): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(368): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+Skeleton.cpp(371): warning C4305: 'argument': truncation from 'double' to 'float'
+Skeleton.cpp(416): warning C4018: '<': signed/unsigned mismatch
   Generating code
-  12 of 265 functions ( 4.5%) were compiled, the rest were copied from previous compilation.
+  0 of 257 functions ( 0.0%) were compiled, the rest were copied from previous compilation.
     0 functions were new in current compilation
     0 functions had inline decision re-evaluated but remain unchanged
   Finished generating code
-  Skeleton.vcxproj -> C:\Users\GYK\Desktop\CG_HF1\Programs\Skeleton\bin\Skeleton.exe
-  Skeleton.vcxproj -> C:\Users\GYK\Desktop\CG_HF1\Programs\Skeleton\bin\Skeleton.pdb (Full PDB)
+  Skeleton.vcxproj -> W:\BME\CG\CG_Homework_1\Programs\Skeleton\bin\Skeleton.exe
+  Skeleton.vcxproj -> W:\BME\CG\CG_Homework_1\Programs\Skeleton\bin\Skeleton.pdb (Full PDB)

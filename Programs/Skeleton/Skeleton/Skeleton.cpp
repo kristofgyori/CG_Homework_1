@@ -1,8 +1,38 @@
 //=============================================================================================
-// Triangle with smooth color and interactive polyline 
+//
+// A beadott program csak ebben a fajlban lehet, a fajl 1 byte-os ASCII karaktereket tartalmazhat, BOM kihuzando.
+// Tilos:
+// - mast "beincludolni", illetve mas konyvtarat hasznalni
+// - faljmuveleteket vegezni a printf-et kiveve
+// - Mashonnan atvett programresszleteket forrasmegjeloles nelkul felhasznalni es
+// - felesleges programsorokat a beadott programban hagyni!!!!!!! 
+// - felesleges kommenteket a beadott programba irni a forrasmegjelolest kommentjeit kiveve
+// ---------------------------------------------------------------------------------------------
+// A feladatot ANSI C++ nyelvu forditoprogrammal ellenorizzuk, a Visual Studio-hoz kepesti elteresekrol
+// es a leggyakoribb hibakrol (pl. ideiglenes objektumot nem lehet referencia tipusnak ertekul adni)
+// a hazibeado portal ad egy osszefoglalot.
+// ---------------------------------------------------------------------------------------------
+// A feladatmegoldasokban csak olyan OpenGL fuggvenyek hasznalhatok, amelyek az oran a feladatkiadasig elhangzottak 
+// A keretben nem szereplo GLUT fuggvenyek tiltottak.
+//
+// NYILATKOZAT
+// ---------------------------------------------------------------------------------------------
+// Nev    : Gyõri Kristóf
+// Neptun : HV0R9S
+// ---------------------------------------------------------------------------------------------
+// ezennel kijelentem, hogy a feladatot magam keszitettem, es ha barmilyen segitseget igenybe vettem vagy
+// mas szellemi termeket felhasznaltam, akkor a forrast es az atvett reszt kommentekben egyertelmuen jeloltem.
+// A forrasmegjeloles kotelme vonatkozik az eloadas foliakat es a targy oktatoi, illetve a
+// grafhazi doktor tanacsait kiveve barmilyen csatornan (szoban, irasban, Interneten, stb.) erkezo minden egyeb
+// informaciora (keplet, program, algoritmus, stb.). Kijelentem, hogy a forrasmegjelolessel atvett reszeket is ertem,
+// azok helyessegere matematikai bizonyitast tudok adni. Tisztaban vagyok azzal, hogy az atvett reszek nem szamitanak
+// a sajat kontribucioba, igy a feladat elfogadasarol a tobbi resz mennyisege es minosege alapjan szuletik dontes.
+// Tudomasul veszem, hogy a forrasmegjeloles kotelmenek megsertese eseten a hazifeladatra adhato pontokat
+// negativ elojellel szamoljak el es ezzel parhuzamosan eljaras is indul velem szemben.
 //=============================================================================================
 #include "framework.h"
 
+#pragma region GLSL
 // vertex shader in GLSL
 const char * vertexSource = R"(
 	#version 330
@@ -67,6 +97,8 @@ const char * textureFragmentSource = R"(
 			fragmentC = texture(textureUnit, texCoord);
 	}
 )";
+#pragma endregion
+
 
 // 2D camera
 class Camera2D {
@@ -85,96 +117,28 @@ public:
 	void Pan(vec2 t) { wCenter = wCenter + t; }
 };
 
-Camera2D camera;		// 2D camera
-GPUProgram gpuProgram;	// vertex and fragment shaders
-GPUProgram gPUTextureProgram;
+Camera2D camera;				// 2D camera
+GPUProgram gpuProgram;			// vertex and fragment shaders
+GPUProgram gPUTextureProgram;	// Shaders program for texture
 
-class Triangle {
-	unsigned int vao;	// vertex array object id
-	float sx, sy;		// scaling
-	vec2 wTranslate;	// translation
-	float phi;			// angle of rotation
-public:
-	Triangle() { Animate(0); }
-
-	void Create() {
-		glGenVertexArrays(1, &vao);	// create 1 vertex array object
-		glBindVertexArray(vao);		// make it active
-
-		unsigned int vbo[2];		// vertex buffer objects
-		glGenBuffers(2, &vbo[0]);	// Generate 2 vertex buffer objects
-
-									// vertex coordinates: vbo[0] -> Attrib Array 0 -> vertexPosition of the vertex shader
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // make it active, it is an array
-		float vertexCoords[] = { -8, -8,  -6, 10,  8, -2 };	// vertex data on the CPU
-		glBufferData(GL_ARRAY_BUFFER,      // copy to the GPU
-			sizeof(vertexCoords), // number of the vbo in bytes
-			vertexCoords,		   // address of the data array on the CPU
-			GL_STATIC_DRAW);	   // copy to that part of the memory which is not modified 
-								   // Map Attribute Array 0 to the current bound vertex buffer (vbo[0])
-		glEnableVertexAttribArray(0);
-		// Data organization of Attribute Array 0 
-		glVertexAttribPointer(0,			// Attribute Array 0
-			2, GL_FLOAT,  // components/attribute, component type
-			GL_FALSE,		// not in fixed point format, do not normalized
-			0, NULL);     // stride and offset: it is tightly packed
-
-						  // vertex colors: vbo[1] -> Attrib Array 1 -> vertexColor of the vertex shader
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]); // make it active, it is an array
-		float vertexColors[] = { 1, 0, 0,  0, 1, 0,  0, 0, 1 };	// vertex data on the CPU
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertexColors), vertexColors, GL_STATIC_DRAW);	// copy to the GPU
-																							// Map Attribute Array 1 to the current bound vertex buffer (vbo[1])
-		glEnableVertexAttribArray(1);  // Vertex position
-									   // Data organization of Attribute Array 1
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL); // Attribute Array 1, components/attribute, component type, normalize?, tightly packed
-	}
-
-	void Animate(float t) {
-		sx = 1;
-		sy = 1;
-		wTranslate = vec2(0, 0);
-		phi = t;
-	}
-
-	mat4 M() {
-		mat4 Mscale(sx, 0, 0, 0,
-			0, sy, 0, 0,
-			0, 0, 0, 0,
-			0, 0, 0, 1); // scaling
-
-		mat4 Mrotate(cosf(phi), sinf(phi), 0, 0,
-			-sinf(phi), cosf(phi), 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1); // rotation
-
-		mat4 Mtranslate(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 0, 0,
-			wTranslate.x, wTranslate.y, 0, 1); // translation
-
-		return Mscale * Mrotate * Mtranslate;	// model transformation
-	}
-
-	void Draw() {
-		// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
-		mat4 MVPTransform = M() * camera.V() * camera.P();
-		MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
-
-		glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
-		glDrawArrays(GL_TRIANGLES, 0, 3);	// draw a single triangle with vertices defined in vao
-	}
-};
 
 class CatmullRomSpline {
-	GLuint vao; // vertex array object, vertex buffer object
+	GLuint vao;					// vertex array object, vertex buffer object
 	unsigned int vbo[2];		// vertex buffer objects
-	std::vector<float>  vertexData; // interleaved data of coordinates
+
 	std::vector<float> colorDatas;
 	std::vector<vec3> cps;
 	std::vector<float> ts;
 
 	vec2 wTranslate;
+	const float epsilon = 0.0001;
+
 public: 
+	std::vector<float>  dVertexData;	// derivated vertex 
+	std::vector<float>  vertexData;		// interleaved data of coordinates
+	std::vector<vec3> getCps() {
+		return cps;
+	}
 	
 	vec3 Hermite(vec3 p0, vec3 v0, float t0, vec3 p1, vec3 v1, float t1, float t) {
 		vec3 a0 = p0;
@@ -186,6 +150,16 @@ public:
 		return rt;
 	}
 
+	vec3 DHermite(vec3 p0, vec3 v0, float t0, vec3 p1, vec3 v1, float t1, float t) {
+		vec3 a0 = p0;
+		vec3 a1 = v0;
+		vec3 a2 = (((p1 - p0) * 3)*(1.0 / ((t1 - t0)*(t1 - t0)))) - ((v1 + (v0 * 2))*(1.0 / (t1 - t0)));
+		vec3 a3 = (((p0 - p1) * 2)*(1.0 / ((t1 - t0)*(t1 - t0)*(t1 - t0)))) + ((v1 + (v0))*(1.0 / ((t1 - t0)*(t1 - t0))));
+
+		vec3 rt = (a3*(t - t0)*(t - t0)*3) + (a2*(t - t0)*2) + a1;
+		return rt;
+	}
+
 	vec3 v(int i) {
 		vec3 tag1 = (cps[i + 1] - cps[i])*(1.0 / (ts[i + 1] - ts[i]));
 		vec3 tag2 = (cps[i] - cps[i - 1])*(1.0 / (ts[i] - ts[i - 1]));
@@ -193,30 +167,33 @@ public:
 		return vi;
 	}
 
-
+	
 	void AddControlPoint(vec3 cp) { 
 		vec4 wVertex = vec4(cp.x, cp.y, 0, 1) * camera.Pinv() * camera.Vinv() * Minv();
-		printf("%lf, %lf\n", wVertex.x, wVertex.y);
 		cps.push_back(vec3(wVertex.x, wVertex.y));
-		ts.push_back(cps.size()-1);
+		ts.push_back(cps.size() - 1);
+		if (cps.size() > 1) 
+		ReDraw();
 	}
 
-	vec3 r(float t) {
+	vec3 r(float t, bool dr = false) {
 		vec3 v0;
 		vec3 v1;
 		
 		if (cps.size() == 0 || cps.size() == 1) {
-			return NULL;
+			return vec3(0, 0, 0);
 		}
 
 		for (int i = 0; i < cps.size() - 1; i++) {
-			if (ts[i] <= t && t <= ts[i + 1]) {
-				
+			if (ts[i] - epsilon <= t  && t <= ts[i + 1] + epsilon) {		
 				if (cps.size() == 2 || i == 0) {
-					if (ts[0] <= t && t <= ts[1]) {
+					if (ts[0] - epsilon <= t && t <= ts[1] + epsilon) {
 						v0 = cps[1] - cps[0];
 						v1 = -cps[1] + v0;
+						if (!dr)
 						return Hermite(cps[0], v0, ts[0], cps[1], v1, ts[1], t);
+						else 
+						return DHermite(cps[0], v0, ts[0], cps[1], v1, ts[1], t);
 					}
 				}
 				else {
@@ -236,14 +213,16 @@ public:
 						else
 							v1 = v(i + 1);
 					}
-
-					return Hermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);
+					if (!dr)
+						return Hermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);
+					else
+						return DHermite(cps[i], v0, ts[i], cps[i + 1], v1, ts[i + 1], t);
+					
 				}
 			}
 		}
-
+		return vec3(0, 0, 0);
 	}
-
 
 	void Create() {
 		glGenVertexArrays(1, &vao);	// create 1 vertex array object
@@ -280,144 +259,77 @@ public:
 			0, 0, 1, 0,
 			0, 0, 0, 1); // inverse translation
 	}
+
 	void ClearDatas() {
 		vertexData.clear();
 		colorDatas.clear();
+		dVertexData.clear();
 	}
 	void ReDraw() {
 		ClearDatas();
-		
+		float tstep = 0.05;
 
-		for (float t = ts[0]; t < ts.size() + 1; t += 0.05) {
+		for (float t = ts[0]; t < ts.size() - 1; t += tstep) {
 			vec3 rt = r(t);
 			vertexData.push_back(rt.x);
 			vertexData.push_back(rt.y);
 			colorDatas.push_back(0);
 			colorDatas.push_back(0);
 			colorDatas.push_back(1);
+
+			vec3 drdt = r(t, true);
+			dVertexData.push_back(drdt.x);
+			dVertexData.push_back(drdt.y);
 		}
 		
-								 // copy data to the GPU
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-		glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), &vertexData[0], GL_DYNAMIC_DRAW);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
-		glBufferData(GL_ARRAY_BUFFER, colorDatas.size() * sizeof(float), &colorDatas[0], GL_DYNAMIC_DRAW);
-
-
-
-	}
-	void Draw() {
-		glBindVertexArray(vao);
-		// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
-		glUseProgram(gpuProgram.getId());
-		mat4 MVPTransform = M() * camera.V() * camera.P();
-		MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
-
-		glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
-		glDrawArrays(GL_LINE_STRIP, 0, vertexData.size()/2);	// draw a single triangle with vertices defined in vao
-	}
-};
-
-class MyTrain {
-	GLuint vao; // vertex array object, vertex buffer object
-	unsigned int vbo[2];		// vertex buffer objects
-	std::vector<float>  vertexData; // interleaved data of coordinates
-	std::vector<float> colorDatas;
-
-public: 
-	void ReDraw() {
-
-		vertexData.push_back(0);
-		vertexData.push_back(0);
-		colorDatas.push_back(0);
-		colorDatas.push_back(0);
-		colorDatas.push_back(1);
-
-		vertexData.push_back(0.5);
-		vertexData.push_back(1);
-		colorDatas.push_back(0);
-		colorDatas.push_back(1);
-		colorDatas.push_back(0);
-
-		vertexData.push_back(1);
-		vertexData.push_back(0);
-		colorDatas.push_back(1);
-		colorDatas.push_back(0);
-		colorDatas.push_back(0);
-
-
 		// copy data to the GPU
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
 		glBufferData(GL_ARRAY_BUFFER, vertexData.size() * sizeof(float), &vertexData[0], GL_DYNAMIC_DRAW);
 
+		// copy colors data to the GPU
 		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
 		glBufferData(GL_ARRAY_BUFFER, colorDatas.size() * sizeof(float), &colorDatas[0], GL_DYNAMIC_DRAW);
 
-	}
-	void Create() {
-		glGenVertexArrays(1, &vao);	// create 1 vertex array object
-		glBindVertexArray(vao);		// make it active
 
 
-		glGenBuffers(2, &vbo[0]);	// Generate 2 vertex buffer objects
-
-									// vertex coordinates: vbo[0] -> Attrib Array 0 -> vertexPosition of the vertex shader
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]); // make it active, it is an array
-
-											   // Map Attribute Array 0 to the current bound vertex buffer (vbo[0])
-		glEnableVertexAttribArray(0);
-
-		// Data organization of Attribute Array 0 
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, NULL);
-
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[1]); // make it active, it is an array
-		glEnableVertexAttribArray(1);		   // Vertex position
-
-											   // Data organization of Attribute Array 1
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, NULL); // Attribute Array 1, components/attribute, component type, normalize?, tightly packed
-
-		ReDraw();
-	}
-
-	
-	mat4 M() {
-		return mat4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1); // translation
-	}
-	mat4 Minv() {
-		return mat4(1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 1, 0,
-			0, 0, 0, 1); // inverse translation
 	}
 	void Draw() {
-			glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
-		// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
+		int ns = vertexData.size()/2;
+		if (ns > 2) {
+			glBindVertexArray(vao);
+			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
 			glUseProgram(gpuProgram.getId());
-		mat4 MVPTransform = M() * camera.V() * camera.P();
-		MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
+			mat4 MVPTransform = M() * camera.V() * camera.P();
+			MVPTransform.SetUniform(gpuProgram.getId(), "MVP");
 
-		glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, vertexData.size() / 2);	// draw a single triangle with vertices defined in vao
+			//glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
+			glDrawArrays(GL_LINE_STRIP, 0, ns);	// draw a single triangle with vertices defined in vao
+		}
 	}
-
-
 };
+CatmullRomSpline catmull;
 
-class TexturedQuad {
+bool started = false;
+static int step = 0;
+class MyTrainTexture {
 	unsigned int vao, vbo[2];
 	vec2 vertices[4], uvs[4];
 	Texture * pTexture;
+	vec2 wTranslate;	// translation
+	
+	float phi;
+	
+	float h = 0;
 public:
-	TexturedQuad() {
-		vertices[0] = vec2(0, 0); uvs[0] = vec2(0, 0);
-		vertices[1] = vec2(2, 0);  uvs[1] = vec2(1, 0);
-		vertices[2] = vec2(2, 2);   uvs[2] = vec2(1, 1);
-		vertices[3] = vec2(0, 2);  uvs[3] = vec2(0, 1);
+	MyTrainTexture() {
+		vertices[0] = vec2(-1, -1); uvs[0] = vec2(0, 0);
+		vertices[1] = vec2(1, -1);  uvs[1] = vec2(1, 0);
+		vertices[2] = vec2(1, 1);   uvs[2] = vec2(1, 1);
+		vertices[3] = vec2(-1, 1);  uvs[3] = vec2(0, 1);
+
+		wTranslate = vec2(5, -2);
 	}
+
 	void Create() {
 		glGenVertexArrays(1, &vao);	// create 1 vertex array object
 		glBindVertexArray(vao);		// make it active
@@ -439,90 +351,99 @@ public:
 
 		int width = 128, height = 128;
 		float a = width/2;
-		float b = a - 20;
+		float b = a/2 - 20;
+		
+		float p1 = 0.05;
+		float p2 = 0.03;
+		float u = 64;
+		float v2 = 40;
+		h = 2.0/32;
+
 		std::vector<vec4> image(width * height);
-		bool ok = false;
+		
 		for (int y = 0; y < height; y++) {
 			for (int x = 0; x < width; x++) {
-				float f = sqrt(pow(a, 2)- pow(x-a, 2));
-				float elip = sqrt(pow(b, 2) - pow(x-a, 2)* pow(b/a, 2));
-				if (y < elip + a && y > -elip + a) {
-					image[y * width + x] = vec4(1, 1, 0);
+				
+				float parabola1 = (1.0 / 2 * p1)*pow(x - u, 2);
+				float parabola2 = (1.0 / 2 * p2)*pow(x - u, 2) + v2;
+			
+				if (y >= parabola1 && y <= parabola2) {
+					image[y * width + x] = vec4(1, 0.9, 0.1, 1);
 				}
 				else {
-					image[y * width + x] = vec4(0, 0, 0);
-				}		
-
-
+					image[y * width + x] = vec4(0, 0, 0, 0);
+				}
 			}
 		}
-
 		pTexture = new Texture(width, height, image);
 	}
 
-	const float EPSILON = 0.01;
-	bool AreSame(float a, float b)
-	{
-		return fabs(a - b) < EPSILON;
-	}
-
-	void MoveVertex(float cX, float cY) {
-		glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
-
-		vec4 wCursor4 = vec4(cX, cY, 0, 1) * camera.Pinv() * camera.Vinv();
-		vec2 wCursor(wCursor4.x, wCursor4.y);
-
-		int closestVertex = 0;
-		float distMin = length(vertices[0] - wCursor);
-		for (int i = 1; i < 4; i++) {
-			float dist = length(vertices[i] - wCursor);
-			if (dist < distMin) {
-				distMin = dist;
-				closestVertex = i;
-			}
-		}
-		vertices[closestVertex] = wCursor;
-
-		// copy data to the GPU
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);	   // copy to that part of the memory which is modified 
-	}
-
-	void Draw() {
-		glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
-
-		mat4 MVPTransform = camera.V() * camera.P();
-		glUseProgram(gPUTextureProgram.getId());
-		// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
-		MVPTransform.SetUniform(gPUTextureProgram.getId(), "MVP");
-
-		//int location = glGetUniformLocation(gpuProgram.getId(), "isGPUProcedural");
-		//if (location >= 0) glUniform1i(location, isGPUProcedural); // set uniform variable MVP to the MVPTransform
-		//else printf("isGPUProcedural cannot be set\n");
-
-		pTexture->SetUniform(gPUTextureProgram.getId(), "textureUnit");
+	mat4 M() {
 		
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);	// draw two triangles forming a quad
+		mat4 Mtranslate(1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 0, 0,
+			wTranslate.x, wTranslate.y, 0, 1); // translation
+
+		mat4 Mrotate(cosf(phi), sinf(phi), 0, 0,
+			-sinf(phi), cosf(phi), 0, 0,
+			0, 0, 1, 0,
+			0, 0, 0, 1); // rotation
+
+		return  Mtranslate*Mrotate;	// model transformation
+	}
+	void Draw() {
+		if (started) {
+			glBindVertexArray(vao);	// make the vao and its vbos active playing the role of the data source
+
+			mat4 MVPTransform = M() * camera.V() * camera.P();
+			glUseProgram(gPUTextureProgram.getId());
+			// set GPU uniform matrix variable MVP with the content of CPU variable MVPTransform
+			MVPTransform.SetUniform(gPUTextureProgram.getId(), "MVP");
+
+			pTexture->SetUniform(gPUTextureProgram.getId(), "textureUnit");
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+			
+			glDrawArrays(GL_TRIANGLE_FAN, 0, 4);	// draw two triangles forming a quad
+			glDisable(GL_BLEND);
+		}
+	}
+	
+	
+	void Animate() {	
+		if (step < catmull.dVertexData.size()) {
+
+			float Tx = catmull.dVertexData[step];		
+			float rx = catmull.vertexData[step++];
+			float Ty = catmull.dVertexData[step];
+			float ry = catmull.vertexData[step++];
+			
+			wTranslate.x = rx - (Ty*h);
+			wTranslate.y = ry + (Tx*h);
+
+		}
+		else {
+			step = 0;
+			
+		}
+	}
+	void SetTranslate(vec2 pos) {
+		wTranslate = pos;
 	}
 };
 
-
-// The virtual world: collection of two objects
-Triangle triangle;
-
-CatmullRomSpline catmull;
-MyTrain train;
-TexturedQuad texture;
+MyTrainTexture texture;
 // Initialization, create an OpenGL context
 void onInitialization() {
 	glViewport(0, 0, windowWidth, windowHeight); 	// Position and size of the photograph on screen
-	glLineWidth(2.0f); // Width of lines in pixels
+	glLineWidth(4.0f); // Width of lines in pixels
 
-					   // Create objects by setting up their vertex data on the GPU
-	//lineStrip.Create();
-	//triangle.Create();
+	// Create objects by setting up their vertex data on the GPU
 	catmull.Create();
-	train.Create();
 	texture.Create();
+
 	// create program for the GPU
 	gpuProgram.Create(vertexSource, fragmentSource, "fragmentColor");
 	gPUTextureProgram.Create(textureVertexSource, textureFragmentSource, "fragmentC");
@@ -545,11 +466,10 @@ void onInitialization() {
 void onDisplay() {
 	glClearColor(0, 0, 0, 0);							// background color 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the screen
-	//triangle.Draw();
-	//lineStrip.Draw();
 	
+
+
 	catmull.Draw();
-	train.Draw();
 	texture.Draw();
 	glutSwapBuffers();									// exchange the two buffers
 }
@@ -563,6 +483,9 @@ void onKeyboard(unsigned char key, int pX, int pY) {
 	case 'x': camera.Pan(vec2(0, -1)); break;
 	case 'z': camera.Zoom(0.9f); break;
 	case 'Z': camera.Zoom(1.1f); break;
+	case 32: 
+		started = true;
+		break;
 	}
 	glutPostRedisplay();
 }
@@ -578,7 +501,7 @@ void onMouse(int button, int state, int pX, int pY) {
 		float cY = 1.0f - 2.0f * pY / windowHeight;
 		
 		catmull.AddControlPoint(vec3(cX, cY));
-		catmull.ReDraw();
+		
 		glutPostRedisplay();     // redraw
 	}
 }
@@ -588,9 +511,12 @@ void onMouseMotion(int pX, int pY) {
 }
 
 // Idle event indicating that some time elapsed: do animation here
+int ti = 0;
 void onIdle() {
-	long time = glutGet(GLUT_ELAPSED_TIME); // elapsed time since the start of the program
-	float sec = time / 1000.0f;				// convert msec to sec
-	triangle.Animate(sec);					// animate the triangle object
+	
+	if (started && ti++ % 100 == 0) {
+		texture.Animate();
+	}
+
 	glutPostRedisplay();					// redraw the scene
 }
